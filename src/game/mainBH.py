@@ -19,6 +19,7 @@ def select_music():
     # comeca escolhendo pela dificuldade
     elements = configBH.LEVELS
     level = None
+    confirmando_troca = False
     
     input_locked = False # flag pra mudar apenas 1 vez por aperto de botao
     idx = 0
@@ -31,6 +32,7 @@ def select_music():
 
         if not input_locked:
             delta = 0
+
             if inputBH.pressed[0]:
                 delta = 1
                 inputBH.pressed[0]=0
@@ -38,17 +40,43 @@ def select_music():
                 delta = -1
                 inputBH.pressed[1]=0
 
+            if inputBH.buttons[0]:
+                if confirmando_troca:
+                    confirmando_troca = False
+                else:
+                    delta = 1
+            if inputBH.buttons[1]:
+                if confirmando_troca:
+                    confirmando_troca = False
+                else:
+                    delta = -1
+
             if delta:
                 idx = (idx + delta) % len(elements)
                 input_locked = True
 
-        elif not inputBH.buttons[0] and not inputBH.buttons[1] and not inputBH.buttons[2]:
+        elif not inputBH.buttons[0] and not inputBH.buttons[1] and not inputBH.buttons[2] and not inputBH.buttons[4]:
             input_locked = False
+
+        confirmar_troca_piano = False
+
+        if inputBH.buttons[4] and not input_locked:
+            confirmar_troca_teclado = True
+            if not confirmando_troca:
+                confirmando_troca = True
+                lcdBH.clear()
+                lcdBH.write("Confirmar troca de instrumento?")
+                time.sleep(0.5)
+            else:
+                inputBH.sendKeyChange()
+                confirmando_Troca = False
 
         if inputBH.pressed[2] and not input_locked: # botao de 'enter'
             input_locked = True
             inputBH.pressed[2] = 0
-            if not level: # escolheu a dificuldade
+            if confirmando_troca:
+                confirmando_troca = False
+            elif not level: # escolheu a dificuldade
                 level = elements[idx]
                 elements = filesBH.getPlaylist(level)
                 idx = 0
@@ -64,10 +92,10 @@ def select_music():
             inputBH.pressed[3]=0
             level = None
             elements = configBH.LEVELS
-            idx = 0       
-        
-        txt = '\n'.join(elements[idx].split(" - ", 1))
-        lcdBH.write(txt)
+            idx = 0
+
+        if not confirmando_troca:
+            lcdBH.write('\n'.join(elements[idx].split(" - ", 1)))
 
 def render(now_ms):
     ledsBH.blank()
