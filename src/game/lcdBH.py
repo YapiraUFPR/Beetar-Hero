@@ -1,64 +1,61 @@
 import time
-from RPLCD import CharLCD
+from RPLCD.i2c import CharLCD
 from RPi import GPIO
 GPIO.setwarnings(False)
 
-# cria LCD de forma limpa
-def createLCD():
-    return CharLCD(
-        numbering_mode=GPIO.BCM,
-        cols=16,
-        rows=2,
-        pin_rs= 26,
-        pin_e = 19,
-        pins_data=[25, 24, 22, 27],
-        charmap='A00'
-    )
+# cria lcd via modulo i2c
+lcd = CharLCD("PCF8574", address=0x27, cols=20, rows=4)
 
-time.sleep(0.5)
-lcd = createLCD()
-time.sleep(0.5)
-lcd.clear()
-lcd.home()
+# dimensoes usadas pelo LCD
+COLS = lcd.cols
+ROWS = lcd.rows
 
+lines = [""] * ROWS
+last = [""] * ROWS
+scroll = [0] * ROWS
 
-# funcoes wrappers
+lastScroll = time.time()
+
+# limpa LCD e buffers
 def clear():
     lcd.clear()
 
-    for i in range(2):
+    for i in range(ROWS):
         lines[i] = ""
         last[i] = ""
         scroll[i] = 0
 
+# volta cursor para origem
 def home():
     lcd.home()
 
+# limpa tudo
 def reset():
     clear()
     lcd.home()
 
-def write(string):
-    t = string.split('\n', 1)
-    setLine(0, t[0])
-    setLine(1, '')
-    if len(t) > 1:
-        setLine(1, t[1])
-
-    update()
-
-lines = ["", ""]
-last = ["", ""]
-scroll = [0, 0]
+# define texto de uma linha
 def setLine(row, text):
-    lines[row] = text.strip()
+    if row < 0 or row >= ROWS:
+        return
+
+    text = str(text).strip()
 
     if text != lines[row]:
         lines[row] = text
         scroll[row] = 0
         last[row] = ""
 
-lastScroll = time.time()
+# escreve texto podendo conter N linhas
+def write(string):
+    text_lines = str(string).split('\n')
+
+    for i in range(ROWS):
+        setLine(i, text_lines[i] if i < len(text_lines) else "")
+
+    update()
+
+# atualiza LCD e scrolling
 def update():
     global lastScroll
 
@@ -67,21 +64,23 @@ def update():
     if now - lastScroll > 0.5:
         lastScroll = now
 
-        for i in range(2):
-            if len(lines[i]) > 16:
+        for i in range(ROWS):
+            if len(lines[i]) > COLS:
                 scroll[i] += 1
 
-    for i in range(2):
+    for i in range(ROWS):
         text = lines[i]
 
-        if len(text) <= 16:
-            show = text.ljust(16)
+        if len(text) <= COLS:
+            show = text.ljust(COLS)
         else:
             loop = text + "   "
             pos = scroll[i] % len(loop)
-            show = (loop + loop)[pos:pos + 16]
+            show = (loop + loop)[pos:pos + COLS]
 
         if show != last[i]:
             lcd.cursor_pos = (i, 0)
             lcd.write_string(show)
             last[i] = show
+
+reset()
