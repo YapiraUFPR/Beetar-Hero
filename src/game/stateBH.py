@@ -1,5 +1,8 @@
 from gpiozero import Button
 
+# flag pra saber se o input esta sendo pelo piano ou guitarra
+pianoMode = False # default guitarra
+
 # flag de 'modo facil', faz com que erros nao sejam contados
 countingErrors = True
 

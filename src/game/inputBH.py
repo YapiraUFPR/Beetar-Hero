@@ -2,9 +2,28 @@ import time
 import socket
 import threading
 import configBH
+import stateBH
+from gpiozero import Button
 
 # vetor correspondente as teclas de cada lane
 buttons = [0] * configBH.NUM_LANES
+
+# funcao unica que altera os valores das notas apertadas
+def updatePressedKeys(button_id, state, fromPiano):
+    # ambos falsos ou ambos verdadeiros
+    if fromPiano == stateBH.pianoMode:
+        buttons[button_id] = state
+
+# configura funcoes disparadas por apertar/soltar o botao
+def setupPianoButton(i, pin):
+    b = Button(pin, pull_up=True, bounce_time=0.1)
+    b.when_pressed = lambda i=i: updatePressedKeys(i, 1, True)
+    b.when_released = lambda i=i: updatePressedKeys(i, 0, True)
+    return b
+
+# cria botoes do piano
+PIANO_PINS = [16, 8, 25, 23, 24] # na ordem das cores
+pianoInput = [setupPianoButton(i, pin) for i, pin in enumerate(PIANO_PINS)]
 
 # pra conectar no esp32 da guitarra
 ESP32_MAC = "30:76:F5:E5:B8:DA"
@@ -12,28 +31,14 @@ ESP32_PORT = 1
 
 # fica tentando conectar no esp32 ateh conseguir
 def connectGuitar():
-    global PianoSock
     while True:
         try:
             sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)        
             sock.connect((ESP32_MAC, ESP32_PORT))
             print("ESP32 Bluetooth Conectado")
             print("Verfique se a música aparece no display", flush=True)
-
-            PianoSOck = sock
-            return sock
         except Exception as e:
             print(f"Erro: {e}", flush=True)
-
-
-# manda pro esp trocar a leitura dos pinos (o que eu suponho que va acontecer)
-def sendKeyChange():
-    global KeySocket
-    if KeySocket:
-        try:
-            KeySocket.sendall("TOGGLE_KEYS\n".encode('utf8'))
-        except:
-            print("Erro ao trocar")
 
 # recebe e atribui 0 (botao foi solto) ou 1 (botao foi apertado) para cada botao
 def bluetoothWorker(sock):
@@ -49,7 +54,7 @@ def bluetoothWorker(sock):
                 if line.startswith("BTN/"):
                     topic, value = line.split(':')
                     btn_id = int(topic.split('/')[1])
-                    buttons[btn_id - 1] = int(value)
+                    updatePressedKeys(btn_id - 1, int(value), False)
 
         except Exception as e:
             print(f"Bluetooth Thread Error: {e}")

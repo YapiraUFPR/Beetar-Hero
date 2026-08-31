@@ -60,7 +60,7 @@ def select_music():
                 lcdBH.write("Confirmar troca de instrumento?")
                 time.sleep(0.5)
             else:
-                inputBH.sendKeyChange()
+                stateBH.pianoMode = not stateBH.pianoMode 
                 confirmando_Troca = False
 
         if inputBH.buttons[2] and not input_locked: # botao de 'enter'
