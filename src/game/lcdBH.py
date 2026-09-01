@@ -3,12 +3,12 @@ from RPLCD.i2c import CharLCD
 from RPi import GPIO
 GPIO.setwarnings(False)
 
-# cria lcd via modulo i2c
-lcd = CharLCD("PCF8574", address=0x27, cols=20, rows=4)
-
 # dimensoes usadas pelo LCD
-COLS = lcd.cols
-ROWS = lcd.rows
+COLS = 20
+ROWS = 4
+
+# cria lcd via modulo i2c
+lcd = CharLCD("PCF8574", address=0x27, cols=COLS, rows=ROWS)
 
 lines = [""] * ROWS
 last = [""] * ROWS
