@@ -8,20 +8,21 @@ import configBH
 BRIGHTNESS = 0.1
 BLINK_TIME = 0.2
 
+#RBG
 COLOR_BLACK  = (0,0,0)
 COLOR_WHITE  = (255,255,255)
-COLOR_GREEN  = (0,255,0)
+COLOR_GREEN  = (0,0,255)
 COLOR_RED    = (255,0,0)
-COLOR_YELLOW = (255,255,0)
-COLOR_BLUE   = (0,0,255)
-COLOR_ORANGE = (255,100,0)
+COLOR_YELLOW = (255,0,40)
+COLOR_BLUE   = (0,255,0)
+COLOR_ORANGE = (255,0,40)
 
 # mapeia cores pra cada lane: 'lane 0' = verde
 laneColors = [COLOR_GREEN, COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_ORANGE]
 
 # Constroi uma fita de LED (vetor de RGB)
-pixels = neopixel.NeoPixel(board.D21, configBH.NUM_LANES * configBH.LEDS_PER_LANE,
-                                          brightness=BRIGHTNESS, auto_write=False)
+pixels = neopixel.NeoPixel(board.D12, configBH.NUM_LANES * configBH.LEDS_PER_LANE,
+                                         brightness=BRIGHTNESS, auto_write=False)
 
 # funcao pra converter indexacao por matriz para indexacao de vetor
 def ledPos(lane, pos):

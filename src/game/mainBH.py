@@ -15,6 +15,7 @@ import configBH
 def select_music():
     lcdBH.clear()
     ledsBH.light()
+    exit(0)
 
     # comeca escolhendo pela dificuldade
     elements = configBH.LEVELS
