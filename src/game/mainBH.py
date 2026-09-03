@@ -31,10 +31,12 @@ def select_music():
 
         if not input_locked:
             delta = 0
-            if inputBH.buttons[0]:
+            if inputBH.pressed[0]:
                 delta = 1
-            if inputBH.buttons[1]:
+                inputBH.pressed[0]=0
+            if inputBH.pressed[1]:
                 delta = -1
+                inputBH.pressed[1]=0
 
             if delta:
                 idx = (idx + delta) % len(elements)
@@ -43,8 +45,9 @@ def select_music():
         elif not inputBH.buttons[0] and not inputBH.buttons[1] and not inputBH.buttons[2]:
             input_locked = False
 
-        if inputBH.buttons[2] and not input_locked: # botao de 'enter'
+        if inputBH.pressed[2] and not input_locked: # botao de 'enter'
             input_locked = True
+            inputBH.pressed[2] = 0
             if not level: # escolheu a dificuldade
                 level = elements[idx]
                 elements = filesBH.getPlaylist(level)
@@ -57,13 +60,14 @@ def select_music():
                 return filesBH.getMusicPath(elements[idx], level)
         
         # botao de "voltar"
-        if inputBH.buttons[3] and level:
+        if inputBH.pressed[3] and level:
+            inputBH.pressed[3]=0
             level = None
             elements = configBH.LEVELS
-            idx = 0
-
-        lcdBH.write('\n'.join(elements[idx].split(" - ", 1)))
-        time.sleep(0.05)
+            idx = 0       
+        
+        txt = '\n'.join(elements[idx].split(" - ", 1))
+        lcdBH.write(txt)
 
 def render(now_ms):
     ledsBH.blank()

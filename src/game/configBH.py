@@ -2,7 +2,7 @@ import time
 
 # disposicao dos leds
 NUM_LANES = 5
-LEDS_PER_LANE = 8
+LEDS_PER_LANE = 24
 HIT_LINE = 8
 
 # velocidade das notas

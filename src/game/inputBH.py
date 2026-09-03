@@ -5,6 +5,8 @@ import configBH
 
 # vetor correspondente as teclas de cada lane
 buttons = [0] * configBH.NUM_LANES
+# salva estado de apertado ou nao pra garantir que nao haja skip em algum loop
+pressed = [0] * configBH.NUM_LANES
 
 # pra conectar no esp32 da guitarra
 ESP32_MAC = "30:76:F5:E5:B8:DA"
@@ -38,6 +40,8 @@ def bluetoothWorker(sock):
                 if line.startswith("BTN/"):
                     topic, value = line.split(':')
                     btn_id = int(topic.split('/')[1])
+                    if int(value):
+                        pressed[btn_id-1] = 1
                     buttons[btn_id - 1] = int(value)
 
         except Exception as e:

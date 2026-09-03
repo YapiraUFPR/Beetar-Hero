@@ -21,7 +21,7 @@ COLOR_ORANGE = (255,0,40)
 laneColors = [COLOR_GREEN, COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_ORANGE]
 
 # Constroi uma fita de LED (vetor de RGB)
-pixels = neopixel.NeoPixel(board.D12, configBH.NUM_LANES * configBH.LEDS_PER_LANE,
+pixels = neopixel.NeoPixel(board.D21, configBH.NUM_LANES * configBH.LEDS_PER_LANE,
                                          brightness=BRIGHTNESS, auto_write=False)
 
 # funcao pra converter indexacao por matriz para indexacao de vetor
