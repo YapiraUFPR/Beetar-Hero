@@ -22,8 +22,9 @@ totalScore = None
 lastJudgement = None
 
 # criacao dos servos com normalizacao interna dos valores
-servoBH.create("score_servo", 0, MAX_ERROR_COUNT)
-servoBH.create("combo_servo", 0, MAX_COMBO_COUNT)
+servoBH.create("score_servo", 0, MAX_ERROR_COUNT, 180, 10)
+servoBH.create("combo_servo_esq", 0, MAX_COMBO_COUNT, 90, 180)
+servoBH.create("combo_servo_dir", 0, MAX_COMBO_COUNT, 90, 0)
 
 def reset():
     global totalScore, errorCount, lastJudgement
@@ -32,7 +33,8 @@ def reset():
     comboCount = 0
     errorCount = DEFAULT_ERROR_COUNT
     servoBH.set("score_servo", errorCount)
-    servoBH.set("combo_servo", 0)
+    servoBH.set("combo_servo_esq", 0)
+    servoBH.set("combo_servo_dir", 0)
 
 def update(newScore):
     global lastJudgement, totalScore, errorCount
@@ -61,7 +63,8 @@ def update(newScore):
     # if 10 < comboCount < 20 => pontos x1.5
     # if 20 < comboCount < 30 => pontos x2
     servoBH.set("score_servo", errorCount)
-    servoBH.set("combo_servo", comboCount)
+    servoBH.set("combo_servo_esq", comboCount)
+    servoBH.set("combo_servo_dir", comboCount)
 
     totalScore += newScore
     # printar o numero de combo tambem sera? talvez soh o foguinho do servo fique melhor
