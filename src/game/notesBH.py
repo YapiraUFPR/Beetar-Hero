@@ -141,9 +141,8 @@ def onKeyRelease(lane):
     if held[lane].note is not None:
         held[lane].note.missed = True
         scoreBH.update(scoreBH.SCORE_MISS)
-        
 
-pressed = [False]*configBH.NUM_LANES
+pressed = [False] * configBH.NUM_LANES
 def updateInput(now_ms):
     for i in range(configBH.NUM_LANES):
         # inverte input se estiver no estado invertido
