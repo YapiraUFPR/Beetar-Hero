@@ -4,6 +4,7 @@ import threading
 import configBH
 import stateBH
 from gpiozero import Button
+import traceback
 
 # vetor correspondente as teclas de cada lane
 buttons = [0] * configBH.NUM_LANES
@@ -36,13 +37,25 @@ ESP32_PORT = 1
 # fica tentando conectar no esp32 ateh conseguir
 def connectGuitar():
     while True:
+        sock = None
         try:
             sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)        
             sock.connect((ESP32_MAC, ESP32_PORT))
             print("ESP32 Bluetooth Conectado")
             print("Verfique se a música aparece no display", flush=True)
+            return sock
+
         except Exception as e:
-            print(f"Erro: {e}", flush=True)
+            print(f"Erro: {e}")
+
+            traceback.print_exc()
+            if sock is not None:
+                try:
+                    sock.close()
+                except:
+                    pass
+
+            time.sleep(1)
 
 # recebe e atribui 0 (botao foi solto) ou 1 (botao foi apertado) para cada botao
 def bluetoothWorker(sock):
