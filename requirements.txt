@@ -1,9 +1,12 @@
 # do raspberry
 adafruit-blinka
 adafruit-circuitpython-neopixel
+adafruit-circuitpython-servokit
 rpi_ws281x
 gpiozero
 lgpio
 RPi.GPIO
 mutagen
+mido
+pyserial
 RPLCD

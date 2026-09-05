@@ -3,7 +3,7 @@ from adafruit_servokit import ServoKit
 kit = ServoKit(channels=16)
 
 servos = {
-    "score_servo": {"channel": 7},
+    "health_servo": {"channel": 7},
     "combo_servo_esq": {"channel": 11},
     "combo_servo_dir": {"channel": 15}
 }
@@ -34,6 +34,4 @@ def set(servo_name, value):
     # normalizacao de valor pra angulo
     ratio = (value - min_value) / (max_value - min_value)
     angle = min_angle + ratio*(max_angle - min_angle)
-    print(servo_name, "value", value, "angle", angle)
     s["servo"].angle = angle
-
