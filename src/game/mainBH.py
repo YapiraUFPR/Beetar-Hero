@@ -1,6 +1,4 @@
-import os
 import time
-import math
 
 import ledsBH
 import lcdBH
@@ -13,141 +11,162 @@ import inputBH
 import configBH
 
 def select_music():
-    lcdBH.clear()
-    ledsBH.light()
-
-    # comeca escolhendo pela dificuldade
-    elements = configBH.LEVELS
     level = None
-    
-    input_locked = False # flag pra mudar apenas 1 vez por aperto de botao
+    elements = configBH.LEVELS
     idx = 0
+    input_locked = False
+
+    def unlock_input():
+        nonlocal input_locked
+        while any(inputBH.buttons):
+            time.sleep(0.005)
+        input_locked = False
+
+    def update_lcd():
+        option = '\n'.join(elements[idx].split(" - ", 1))
+        if elements == configBH.LEVELS:
+            option+='\n\n\n'
+        else:
+            option+='\n\n'
+        option += "Modo Piano" if stateBH.pianoMode else "Modo Guitarra"
+        lcdBH.write(option)
+
+    update_lcd()
+    ledsBH.light()
+    
     while True:
-        if stateBH.sideSwitchChanged:
-            stateBH.sideSwitchChanged = False
-            lcdBH.write("Verifique a\nOrdem das Cores")
-            ledsBH.light()
-            time.sleep(1)
+        if input_locked:
+            if not any(inputBH.buttons):
+                input_locked = False
+            time.sleep(1 / 60)
+            continue
 
-        if not input_locked:
-            delta = 0
-            if inputBH.pressed[0]:
-                delta = 1
-                inputBH.pressed[0]=0
-            if inputBH.pressed[1]:
-                delta = -1
-                inputBH.pressed[1]=0
+        delta = inputBH.buttons[4] - inputBH.buttons[3]
 
-            if delta:
-                idx = (idx + delta) % len(elements)
-                input_locked = True
-
-        elif not inputBH.buttons[0] and not inputBH.buttons[1] and not inputBH.buttons[2]:
-            input_locked = False
-
-        if inputBH.pressed[2] and not input_locked: # botao de 'enter'
+        if delta:
+            idx = (idx + delta) % len(elements)
+            update_lcd()
             input_locked = True
-            inputBH.pressed[2] = 0
-            if not level: # escolheu a dificuldade
+            continue
+
+        if inputBH.buttons[2]:
+            input_locked = True
+            if not level:
                 level = elements[idx]
                 elements = filesBH.getPlaylist(level)
                 idx = 0
-            else: # escolheu a musica
-                if level == configBH.LEVELS[0]:
-                    stateBH.countingErrors = False
-                else:
-                    stateBH.countingErrors = True
-                return filesBH.getMusicPath(elements[idx], level)
-        
-        # botao de "voltar"
-        if inputBH.pressed[3] and level:
-            inputBH.pressed[3]=0
+                update_lcd()
+                continue
+
+            stateBH.countingErrors = level != configBH.LEVEL_EASY
+            return filesBH.getMusicPath(elements[idx], level)
+
+        if inputBH.buttons[1] and level:
             level = None
             elements = configBH.LEVELS
-            idx = 0       
-        
-        txt = '\n'.join(elements[idx].split(" - ", 1))
-        lcdBH.write(txt)
+            idx = 0
+            update_lcd()
+            input_locked = True
+            continue
 
-def render(now_ms):
+        if inputBH.buttons[0]:
+            inputBH.buttons[:] = [0] * configBH.NUM_LANES
+            stateBH.pianoMode = not stateBH.pianoMode
+            update_lcd()
+            input_locked = True
+            continue
+
+        time.sleep(1 / 60)
+
+
+def render(now_ms, display_txt):
     ledsBH.blank()
     notesBH.updateNotes(now_ms)
     notesBH.updateInput(now_ms)
     ledsBH.show()
-    lcdBH.write(scoreBH.lastJudgement)
+    lcdBH.write(display_txt)
+
+def ms_to_mmss(ms):
+    total_sec = ms // 1000
+    minutes = total_sec // 60
+    seconds = total_sec % 60
+    return f"{minutes}:{seconds:02d}"
 
 def start_music(music_path):
-    # carrega duracao da musica e suas notas
+    FPS = 60
+    FRAME_TIME = 1 / FPS
+
+    def limit_fps(frame_start):
+        delay = FRAME_TIME - (time.monotonic() - frame_start)
+        if delay > 0:
+            time.sleep(delay)
+
     start_ms, end_ms = filesBH.getTimestamps(music_path)
     duration_ms = end_ms - start_ms
+    formated_duration_time = ms_to_mmss(duration_ms)
 
     event_index = 0
     events = notesBH.loadNotes(music_path)
-    while (event_index < len(events) and events[event_index].time_ms <= start_ms):
-        event_index+=1
+    while event_index < len(events) and events[event_index].time_ms <= start_ms:
+        event_index += 1
 
-    # reseta estados da run, como 'runLost' e 'total_score'
-    scoreBH.reset()
-    stateBH.reset()
+    audioBH.start(music_path, start_ms, end_ms)
+    configBH.timeCorrection()
+    base_ms = time.monotonic_ns() // 1_000_000
 
-    audioBH.start(music_path, start_ms, end_ms) # comeca a tocar a musica com os timestamps
-    configBH.timeCorrection() # delay para sincronizacao
-
-    pct = ""
-    base_ms = time.monotonic_ns() // 1_000_000 # relogio base em ms
     while True:
+        frame_start = time.monotonic()
         played_ms = (time.monotonic_ns() // 1_000_000) - base_ms
         now_ms = played_ms + start_ms
 
-        while (event_index < len(events) and events[event_index].time_ms <= now_ms):
+        while event_index < len(events) and events[event_index].time_ms <= now_ms:
             if events[event_index].time_ms <= end_ms:
                 e = events[event_index]
-                notesBH.spawnNote(e.mask, now_ms, e.length_leds)
+                notesBH.spawnNote(e.mask, e.time_ms, e.length_leds)
             event_index += 1
 
-        # atualiza porcentagem decorrida da musica
-        if played_ms%10 == 0:
-            pct = math.floor((played_ms/duration_ms)*100)
-            pct = str(pct)
- 
-        # manipula a string de score a fim de 'encaixar' a porcentagem no lado superior direito do lcd
-        s = scoreBH.lastJudgement.split('\n')
-        s[0] = f"{s[0].split()[0]:<{16-len(pct)-1}}{pct}%"
-        scoreBH.lastJudgement = '\n'.join(s)
+        formated_time = f"\nTime: {ms_to_mmss(min(played_ms, duration_ms))}/{formated_duration_time}"
+        display_txt = scoreBH.lastJudgement + formated_time
+        render(now_ms, display_txt)
 
-        render(now_ms)
-
-        if stateBH.runLost: # zerou a vida
+        if stateBH.runLost:
             audioBH.stop()
             return 0
 
-        if stateBH.endGame: # jogo morto no meio pelo botao especial
+        if stateBH.endGame:
             audioBH.stop()
             return -1
 
-        #acabou a musica
         if played_ms >= duration_ms:
-            # espera nao ter mais notas ativas
             while notesBH.hasActive():
-                played_ms = (time.monotonic_ns() // 1_000_000) - base_ms
-                now_ms = played_ms + start_ms
-                render(now_ms)
+                frame_start = time.monotonic()
+                now_ms = start_ms + (time.monotonic_ns() // 1_000_000) - base_ms
+                display_txt = scoreBH.lastJudgement + formated_time
+                render(now_ms, display_txt)
+                limit_fps(frame_start)
 
-            # adiciona um pequeno delay pra n ficar estranho qnd acaba as notas
             delay_start_ms = now_ms
             while now_ms - delay_start_ms <= configBH.NOTE_TRAVEL_TIME_MS:
-                played_ms = (time.monotonic_ns() // 1_000_000) - base_ms
-                now_ms = played_ms + start_ms
-                render(now_ms)
+                frame_start = time.monotonic()
+                now_ms = start_ms + (time.monotonic_ns() // 1_000_000) - base_ms
+                display_txt = scoreBH.lastJudgement + formated_time
+                render(now_ms, display_txt)
+                limit_fps(frame_start)
 
+            audioBH.stop()
             return scoreBH.totalScore
 
+        limit_fps(frame_start)
 
 def main():
     # retorna somente depois de conectar o input
     inputBH.start()
 
     while True:
+        # reseta estados, como 'runLost', 'total_score' e posicao dos servos
+        scoreBH.reset()
+        stateBH.reset()
+
         # em menu, permite modificacao de canhoto/destro e guitarra/piano
         stateBH.onMenu = True
         music = select_music()
@@ -155,15 +174,17 @@ def main():
         
         final_score = start_music(music)
 
-        if final_score == -1:
-            lcdBH.write("Jogo Cancelado")
-            ledsBH.clear()
-            time.sleep(1)
-            continue
+        match final_score:
+            case -1:
+                lcdBH.write("Jogo Cancelado")
+            case 0:
+                lcdBH.write("Jogo Perdido")
+            case _:
+                lcdBH.write(f"Pontuacao Final:\n{final_score}")
+        ledsBH.clear()
+        time.sleep(1)
 
-        lcdBH.write(f"Pontuacao Final:\n{final_score}")
-
-        if final_score:
+        if final_score > 0:
             ledsBH.blinkLanes()
             ledsBH.slideLanes()
             ledsBH.blinkLanes()

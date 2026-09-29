@@ -27,20 +27,19 @@ class HeldNote:
         self.note = None
         self.consumed = 0
 
-
-held = [HeldNote() for _ in range(configBH.NUM_LANES)]
-active_notes = [[ActiveNote() for _ in range(configBH.LEDS_PER_LANE)]
+pressed = None
+held = None
+active_notes = None
+def loadNotes(music_path):
+    global held, active_notes, pressed
+    pressed = [False] * configBH.NUM_LANES
+    held = [HeldNote() for _ in range(configBH.NUM_LANES)]
+    active_notes = [[ActiveNote() for _ in range(configBH.LEDS_PER_LANE)]
                                             for _ in range(configBH.NUM_LANES)]
 
-def loadNotes(music_path):
     notes = []
-
     for time_ms, lane, length_leds in filesBH.readNotes(music_path):
-        if lane == 0:
-            continue
-        notes.append(NoteEvent(time_ms, lane-1, length_leds))
-        #notes.append(NoteEvent(time_ms, lane, length_leds))
-
+        notes.append(NoteEvent(time_ms, lane, length_leds))
     return notes
 
 def spawnNote(lane, now_ms, length_leds):
@@ -141,9 +140,7 @@ def onKeyRelease(lane):
     if held[lane].note is not None:
         held[lane].note.missed = True
         scoreBH.update(scoreBH.SCORE_MISS)
-        
 
-pressed = [False]*configBH.NUM_LANES
 def updateInput(now_ms):
     for i in range(configBH.NUM_LANES):
         # inverte input se estiver no estado invertido

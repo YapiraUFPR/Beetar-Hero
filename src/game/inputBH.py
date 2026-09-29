@@ -1,57 +1,81 @@
 import time
 import socket
+import serial
 import threading
+
 import configBH
+import stateBH
+from gpiozero import Button
 
-# vetor correspondente as teclas de cada lane
+#estado atual do botao
 buttons = [0] * configBH.NUM_LANES
-# salva estado de apertado ou nao pra garantir que nao haja skip em algum loop
-pressed = [0] * configBH.NUM_LANES
 
-# pra conectar no esp32 da guitarra
+def updatePressedKeys(i, state, fromPiano):
+    if fromPiano == stateBH.pianoMode:
+        i = configBH.NUM_LANES - 1 - i
+        buttons[i] = state
+
+def setupPianoButton(i, pin):
+    b = Button(pin, pull_up=True, bounce_time=0.1)
+    b.when_pressed = lambda i=i: updatePressedKeys(i, 1, True)
+    b.when_released = lambda i=i: updatePressedKeys(i, 0, True)
+    return b
+
+PIANO_PINS = [16, 8, 25, 24, 23]
+pianoInput = [setupPianoButton(i, pin) for i, pin in enumerate(PIANO_PINS)]
+
 ESP32_MAC = "30:76:F5:E5:B8:DA"
-ESP32_PORT = 1
+ESP32_BT_PORT = 1
+ESP32_SERIAL_PORT = "/dev/ttyUSB0"
+ESP32_BAUD = 115200
 
-# fica tentando conectar no esp32 ateh conseguir
-def connectGuitar():
+def process(line):
+    if line.startswith("BTN/"):
+        topic, value = line.strip().split(':')
+        updatePressedKeys(int(topic.split('/')[1]) - 1, int(value), False)
+
+def connect(connection_type):
     while True:
         try:
-            sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)        
-            sock.connect((ESP32_MAC, ESP32_PORT))
-            print("ESP32 Bluetooth Conectado")
-            print("Verfique se a música aparece no display", flush=True)
+            if connection_type == "bluetooth":
+                c = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+                c.connect((ESP32_MAC, ESP32_BT_PORT))
+            else:
+                c = serial.Serial(ESP32_SERIAL_PORT, ESP32_BAUD, timeout=1)
 
-            return sock
+            print(f"ESP32 {connection_type} conectado")
+            return c
+
         except Exception as e:
-            print(f"Erro: {e}", flush=True)
+            print(f"Erro {connection_type}: {e}")
+            time.sleep(1)
 
-
-# recebe e atribui 0 (botao foi solto) ou 1 (botao foi apertado) para cada botao
 def bluetoothWorker(sock):
     while True:
-        f = sock.makefile('r')
-
         try:
+            f = sock.makefile('r')
             for line in f:
-                line = line.strip()
-                
-                # o ideal seria simplificar, mas com o esp32 morto
-                # eh melhor deixar quieto isso por enquanto
-                if line.startswith("BTN/"):
-                    topic, value = line.split(':')
-                    btn_id = int(topic.split('/')[1])
-                    if int(value):
-                        pressed[btn_id-1] = 1
-                    buttons[btn_id - 1] = int(value)
+                process(line)
+        except:
+            pass
 
-        except Exception as e:
-            print(f"Bluetooth Thread Error: {e}")
+        try: f.close()
+        except: pass
+        sock.close()
+        sock = connect("bluetooth")
 
-        finally:
-            f.close()
-            sock.close()
+def serialWorker(ser):
+    while True:
+        try:
+            line = ser.readline().decode(errors="ignore").strip()
+            if line:
+                process(line)
+        except:
+            ser.close()
+            ser = connect("serial")
 
-# inicia processamento
-def start():
-    sock = connectGuitar()
-    threading.Thread(target=bluetoothWorker, args=(sock,), daemon=True).start()
+def start(connection_type="serial"):
+    con_type = connection_type.lower()
+    c = connect(con_type)
+    worker = bluetoothWorker if con_type == "bluetooth" else serialWorker
+    threading.Thread(target=worker, args=(c,), daemon=True).start()
