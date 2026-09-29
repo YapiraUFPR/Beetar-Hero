@@ -12,6 +12,7 @@ buttons = [0] * configBH.NUM_LANES
 
 def updatePressedKeys(i, state, fromPiano):
     if fromPiano == stateBH.pianoMode:
+        i = configBH.NUM_LANES - 1 - i
         buttons[i] = state
 
 def setupPianoButton(i, pin):
@@ -20,12 +21,12 @@ def setupPianoButton(i, pin):
     b.when_released = lambda i=i: updatePressedKeys(i, 0, True)
     return b
 
-PIANO_PINS = [16, 8, 25, 23, 24]
+PIANO_PINS = [16, 8, 25, 24, 23]
 pianoInput = [setupPianoButton(i, pin) for i, pin in enumerate(PIANO_PINS)]
 
 ESP32_MAC = "30:76:F5:E5:B8:DA"
 ESP32_BT_PORT = 1
-ESP32_SERIAL_PORT = "/dev/ttyACM0"
+ESP32_SERIAL_PORT = "/dev/ttyUSB0"
 ESP32_BAUD = 115200
 
 def process(line):

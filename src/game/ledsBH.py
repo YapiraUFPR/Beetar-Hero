@@ -25,12 +25,14 @@ COLOR_YELLOW = (200,80,0)
 COLOR_BLUE   = (0,0,255)
 COLOR_ORANGE = (255,40,0)
 
+
 # mapeia cores pra cada lane: 'lane 0' = verde
 laneColors = [COLOR_GREEN, COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_ORANGE]
 
 # Constroi uma fita de LED (vetor de RGB)
 pixels = neopixel.NeoPixel(board.D21, configBH.NUM_LANES * configBH.LEDS_PER_LANE,
                                          brightness=BRIGHTNESS, auto_write=False)
+
 
 # funcao pra converter indexacao por matriz para indexacao de vetor
 def ledPos(lane, pos):

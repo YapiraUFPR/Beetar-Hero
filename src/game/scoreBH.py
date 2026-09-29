@@ -26,13 +26,24 @@ servoBH.create("combo_servo_dir", 0, MAX_COMBO, 90, 0)
 
 def reset():
     global totalScore, currentHealth, comboCount, lastJudgement
-    lastJudgement = "Prepare-se !!!"
     totalScore = 0
     comboCount = 0
     currentHealth = DEFAULT_HEALTH
+    updateJudgement("Prepare-se !!!")
     servoBH.set("health_servo", currentHealth)
     servoBH.set("combo_servo_esq", 0)
     servoBH.set("combo_servo_dir", 0)
+
+def updateJudgement(string_base):
+    global lastJudgement
+
+    # atualiza print da vida e estado do servo de vida
+    if stateBH.countingErrors:
+        string_base += f"\nVida: {currentHealth}/{MAX_HEALTH}"
+        servoBH.set("health_servo", currentHealth)
+    else:
+        string_base += f"\nVida: Infinita"
+    lastJudgement = f"{string_base}\nScore: {totalScore}"
 
 def update(newScore):
     global lastJudgement, totalScore, comboCount, currentHealth
@@ -52,15 +63,9 @@ def update(newScore):
         scoreStr = "Bom"
     elif newScore == SCORE_PERFECT:
         scoreStr = "Perfeito"
+    
+    updateJudgement(scoreStr)
 
-    # atualiza print da vida e estado do servo de vida
-    if stateBH.countingErrors:
-        scoreStr += f"\nVida: {currentHealth}/{MAX_HEALTH}"
-        servoBH.set("health_servo", currentHealth)
-    else:
-        scoreStr += f"\nVida: Infinita"
-    lastJudgement = f"{scoreStr}\nScore: {totalScore}"
-     
     #da pra fazer um multiplicador de pontos aqui, tipo
     # if 10 < comboCount < 20 => newScore x1.5
     # if 20 < comboCount < 30 => newScore x2
