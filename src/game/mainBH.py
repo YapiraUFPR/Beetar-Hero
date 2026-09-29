@@ -41,7 +41,7 @@ def select_music():
             time.sleep(1 / 60)
             continue
 
-        delta = inputBH.buttons[4] - inputBH.buttons[3]
+        delta = inputBH.get_green_button() - inputBH.get_red_button()
 
         if delta:
             idx = (idx + delta) % len(elements)
@@ -49,7 +49,7 @@ def select_music():
             input_locked = True
             continue
 
-        if inputBH.buttons[2]:
+        if inputBH.get_yellow_button():
             input_locked = True
             if not level:
                 level = elements[idx]
@@ -61,7 +61,7 @@ def select_music():
             stateBH.countingErrors = level != configBH.LEVEL_EASY
             return filesBH.getMusicPath(elements[idx], level)
 
-        if inputBH.buttons[1] and level:
+        if inputBH.get_blue_button() and level:
             level = None
             elements = configBH.LEVELS
             idx = 0
@@ -69,10 +69,10 @@ def select_music():
             input_locked = True
             continue
 
-        if inputBH.buttons[0]:
-            inputBH.buttons[:] = [0] * configBH.NUM_LANES
+        if inputBH.get_orange_button():
             stateBH.pianoMode = not stateBH.pianoMode
             update_lcd()
+            inputBH.reset()
             input_locked = True
             continue
 
