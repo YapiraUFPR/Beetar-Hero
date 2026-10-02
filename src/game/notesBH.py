@@ -144,8 +144,7 @@ def onKeyRelease(lane):
 
 def updateInput(now_ms):
     for i in range(configBH.NUM_LANES):
-        # inverte input se estiver no estado invertido
-        lane = configBH.NUM_LANES - 1 - i if stateBH.sideSwitch else i
+        lane = configBH.NUM_LANES-1-i if not stateBH.sideSwitch else i
 
         if inputBH.buttons[i] and not pressed[i]:
             onKeyPress(lane, now_ms)
