@@ -7,12 +7,31 @@ import configBH
 import stateBH
 from gpiozero import Button
 
-#estado atual do botao
-buttons = [0] * configBH.NUM_LANES
+#estado atual dos botoes
+buttons = None
+auto_holding_button = None
+
+def reset():   
+    global buttons, auto_holding_button
+    buttons = [0] * configBH.NUM_LANES
+    auto_holding_button = 0 
+
+def get_green_button():        return buttons[0]
+def get_red_button():          return buttons[1]
+def get_yellow_button():       return buttons[2]
+def get_blue_button():         return buttons[3]
+def get_orange_button():       return buttons[4]
+def get_auto_holding_button(): return auto_holding_button
 
 def updatePressedKeys(i, state, fromPiano):
-    if fromPiano == stateBH.pianoMode:
-        i = configBH.NUM_LANES - 1 - i
+    global auto_holding_button
+
+    if fromPiano != stateBH.pianoMode:
+        return
+
+    if i == 5:  # sexto botao eh a palheta (indexado em zero)
+        auto_holding_button = state
+    else: # botoes de nota normal
         buttons[i] = state
 
 def setupPianoButton(i, pin):
@@ -21,6 +40,7 @@ def setupPianoButton(i, pin):
     b.when_released = lambda i=i: updatePressedKeys(i, 0, True)
     return b
 
+# respectivo a ordem das lanes
 PIANO_PINS = [16, 8, 25, 24, 23]
 pianoInput = [setupPianoButton(i, pin) for i, pin in enumerate(PIANO_PINS)]
 
@@ -32,7 +52,8 @@ ESP32_BAUD = 115200
 def process(line):
     if line.startswith("BTN/"):
         topic, value = line.strip().split(':')
-        updatePressedKeys(int(topic.split('/')[1]) - 1, int(value), False)
+        topic = topic.split('/')[1]
+        updatePressedKeys(int(topic), int(value), False)
 
 def connect(connection_type):
     while True:
@@ -78,4 +99,5 @@ def start(connection_type="serial"):
     con_type = connection_type.lower()
     c = connect(con_type)
     worker = bluetoothWorker if con_type == "bluetooth" else serialWorker
+    reset()
     threading.Thread(target=worker, args=(c,), daemon=True).start()

@@ -137,14 +137,14 @@ def onKeyPress(lane, now_ms):
     scoreBH.update(scoreBH.SCORE_MISS)
 
 def onKeyRelease(lane):
-    if held[lane].note is not None:
-        held[lane].note.missed = True
-        scoreBH.update(scoreBH.SCORE_MISS)
+    if held[lane].note is None or inputBH.get_auto_holding_button():
+        return
+    held[lane].note.missed = True
+    scoreBH.update(scoreBH.SCORE_MISS)
 
 def updateInput(now_ms):
     for i in range(configBH.NUM_LANES):
-        # inverte input se estiver no estado invertido
-        lane = configBH.NUM_LANES - 1 - i if stateBH.sideSwitch else i
+        lane = configBH.NUM_LANES-1-i if not stateBH.sideSwitch else i
 
         if inputBH.buttons[i] and not pressed[i]:
             onKeyPress(lane, now_ms)

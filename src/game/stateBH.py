@@ -20,10 +20,9 @@ def reset():
 onMenu = True
 endGame = False
 sideSwitch = False
-sideSwitchChanged = False
 
 def sideSwitchPressed():
-    global sideSwitch, sideSwitchChanged, endGame
+    global sideSwitch, endGame
 
     # se apertou o botao e nao esta no menu
     if not onMenu:
@@ -32,7 +31,6 @@ def sideSwitchPressed():
 
     # atualiza estado
     sideSwitch = not sideSwitch
-    sideSwitchChanged = True 
 
 # setup de pinagem (gpio1) e callback
 button = Button(1, pull_up=True, bounce_time=0.1)

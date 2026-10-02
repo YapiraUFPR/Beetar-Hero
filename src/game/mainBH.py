@@ -9,75 +9,7 @@ import scoreBH
 import audioBH
 import inputBH
 import configBH
-
-def select_music():
-    level = None
-    elements = configBH.LEVELS
-    idx = 0
-    input_locked = False
-
-    def unlock_input():
-        nonlocal input_locked
-        while any(inputBH.buttons):
-            time.sleep(0.005)
-        input_locked = False
-
-    def update_lcd():
-        option = '\n'.join(elements[idx].split(" - ", 1))
-        if elements == configBH.LEVELS:
-            option+='\n\n\n'
-        else:
-            option+='\n\n'
-        option += "Modo Piano" if stateBH.pianoMode else "Modo Guitarra"
-        lcdBH.write(option)
-
-    update_lcd()
-    ledsBH.light()
-    
-    while True:
-        if input_locked:
-            if not any(inputBH.buttons):
-                input_locked = False
-            time.sleep(1 / 60)
-            continue
-
-        delta = inputBH.buttons[4] - inputBH.buttons[3]
-
-        if delta:
-            idx = (idx + delta) % len(elements)
-            update_lcd()
-            input_locked = True
-            continue
-
-        if inputBH.buttons[2]:
-            input_locked = True
-            if not level:
-                level = elements[idx]
-                elements = filesBH.getPlaylist(level)
-                idx = 0
-                update_lcd()
-                continue
-
-            stateBH.countingErrors = level != configBH.LEVEL_EASY
-            return filesBH.getMusicPath(elements[idx], level)
-
-        if inputBH.buttons[1] and level:
-            level = None
-            elements = configBH.LEVELS
-            idx = 0
-            update_lcd()
-            input_locked = True
-            continue
-
-        if inputBH.buttons[0]:
-            inputBH.buttons[:] = [0] * configBH.NUM_LANES
-            stateBH.pianoMode = not stateBH.pianoMode
-            update_lcd()
-            input_locked = True
-            continue
-
-        time.sleep(1 / 60)
-
+import menuBH
 
 def render(now_ms, display_txt):
     ledsBH.blank()
@@ -168,10 +100,7 @@ def main():
         stateBH.reset()
 
         # em menu, permite modificacao de canhoto/destro e guitarra/piano
-        stateBH.onMenu = True
-        music = select_music()
-        stateBH.onMenu = False
-        
+        music = menuBH.select_music()
         final_score = start_music(music)
 
         match final_score:
@@ -188,6 +117,7 @@ def main():
             ledsBH.blinkLanes()
             ledsBH.slideLanes()
             ledsBH.blinkLanes()
+            menuBH.saveFinalScore(final_score)
         else:
             ledsBH.blinkRed()
 
