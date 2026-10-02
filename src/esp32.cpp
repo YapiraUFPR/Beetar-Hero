@@ -11,8 +11,9 @@ BluetoothSerial BT;
 
 const unsigned long SERIAL_BAUD = 115200;
 
-const int btns[] = {27, 26, 25, 33, 32};
-bool last[] = {HIGH, HIGH, HIGH, HIGH, HIGH};
+// respectivamente: verde, vermelho, amarelo, azul, laranja e palheta
+const int btns[] = {27, 26, 25, 33, 32, 19};
+bool last[] = {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH};
 
 void setup() {
     for (int b : btns)
@@ -26,14 +27,13 @@ void setup() {
 }
 
 void loop(){
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         bool cur = digitalRead(btns[i]);
-
         if (cur != last[i]) {
 #if USE_BLUETOOTH
-            BT.printf("BTN/%d:%d\n", i + 1, !cur);
+            BT.printf("BTN/%d:%d\n", i, !cur);
 #else
-            Serial.printf("BTN/%d:%d\n", i + 1, !cur);
+            Serial.printf("BTN/%d:%d\n", i, !cur);
 #endif
             last[i] = cur;
         }

@@ -32,7 +32,6 @@ def updatePressedKeys(i, state, fromPiano):
     if i == 5:  # sexto botao eh a palheta (indexado em zero)
         auto_holding_button = state
     else: # botoes de nota normal
-#        i = configBH.NUM_LANES - 1 - i
         buttons[i] = state
 
 def setupPianoButton(i, pin):
@@ -41,6 +40,7 @@ def setupPianoButton(i, pin):
     b.when_released = lambda i=i: updatePressedKeys(i, 0, True)
     return b
 
+# respectivo a ordem das lanes
 PIANO_PINS = [16, 8, 25, 24, 23]
 pianoInput = [setupPianoButton(i, pin) for i, pin in enumerate(PIANO_PINS)]
 
